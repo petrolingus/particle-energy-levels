@@ -98,7 +98,7 @@
                               <HBox>
                                  <children>
                                     <Label prefWidth="150.0" text="Sigma" />
-                                    <TextField fx:id="sigmaText" text="0.05" />
+                                    <TextField fx:id="sigmaText" text="0.01" />
                                  </children>
                               </HBox>
                               <HBox>

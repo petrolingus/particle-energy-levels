@@ -13,49 +13,41 @@ public class Controller {
     public TextField pitWidthText;
     public TextField kText;
     public TextField energyText;
-    public TextField kthText;
+
+    private static final int COUNT = 300; // Count of samples
+    private static final double R = 15; // Z-interval
+    private static final double EPS = 0.1; // Z-interval
 
     double U0;
-    double koef;
-    int k_dlg;
-    double R;
+    double coefficient;
     double a;
-    double Emin;
-    double Emax;
+    double sigma;
 
-    double[] psi;
-    double[] Fi;
+    double[] fi;
     double[] r;
     double[] lastFi;
-    double Sigma;
 
     public LineChart<Number, Number> phaseEnergyChart;
     public LineChart<Number, Number> waveFunctionChart;
 
-    double calculateU(double koef, double x) {
-        double c0 = U0 * Math.exp(-(x * x) / (2 * Sigma * Sigma));
-        double c1 = Sigma * Math.sqrt(2 * Math.PI);
-//        return 0.5 * koef * x * x + c0 / c1;
-        return c0 / c1;
+    double calculateU(double a, double x) {
+        double c0 = U0 * Math.exp(-(x * x) / (2 * sigma * sigma));
+        double c1 = sigma * Math.sqrt(2 * Math.PI);
+        return 0.5 * a * x * x + c0 / c1;
     }
 
-    double dFi(double energy, double fi, double z) {
-        return (calculateU(koef, z) - energy) * Math.pow(Math.cos(fi), 2) - Math.pow(Math.sin(fi), 2);
-    }
-
-    double getFi(double energy, int count) {
-        double[] mas = new double[count];
+    double getFi(double energy) {
+        double[] mas = new double[COUNT];
         double k1, k2, k3, k4;
         double zStart = -R;
-        double zFinal = R;
 
         int CurIndex = 0;
-        double CurZ = 0;
-        double dz = (zFinal - zStart) / count;
+        double CurZ;
+        double dz = (R - zStart) / COUNT;
         mas[CurIndex] = Math.PI / 2;
-        Fi[CurIndex] = mas[CurIndex];
+        fi[CurIndex] = mas[CurIndex];
 
-        for (int i = 1; i < count; i++) {
+        for (int i = 1; i < COUNT; i++) {
             CurZ = zStart + i * dz;
 
             k1 = dFi(energy, mas[CurIndex], CurZ) * dz;
@@ -64,15 +56,15 @@ public class Controller {
             k4 = dFi(energy, mas[CurIndex] + k3, CurZ + dz) * dz;
 
             mas[CurIndex + 1] = mas[CurIndex] + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
-            Fi[CurIndex] = mas[CurIndex];
+            fi[CurIndex] = mas[CurIndex];
 
             CurIndex++;
         }
 
-        return mas[count - 1];
+        return mas[Controller.COUNT - 1];
     }
 
-    double getEstat(double eMin, double eMax, double fiLeft, double fiRight, double statValue, double eps, int count) {
+    double getEstat(double eMin, double eMax, double fiLeft, double fiRight, double statValue) {
         double midE;
         double midFi;
         int iter = 0;
@@ -80,7 +72,7 @@ public class Controller {
 
         do {
             midE = (eMax + eMin) / 2;
-            midFi = getFi(midE, count);
+            midFi = getFi(midE);
             double flag = (fiLeft - statValue) * (midFi - statValue);
 
             if (flag < 0) {
@@ -92,52 +84,57 @@ public class Controller {
             }
             err = Math.abs(midFi - statValue);
         }
-        while (err > eps);
+        while (err > EPS);
 
         return midE;
     }
 
-    double[] getR(double _E, int count) {
-        double[] mas = new double[count];
+    double[] getR(double e) {
+
+        double[] result = new double[COUNT];
 
         double zStart = -R;
         double zFinal = R;
 
-        int CurIndex = count / 2;
+        int CurIndex = COUNT / 2;
         double CurZ;
-        double dz = (zFinal - zStart) / count;
+        double dz = (zFinal - zStart) / COUNT;
         double k1, k2, k3, k4;
-        mas[CurIndex] = 1;
+        result[CurIndex] = 1;
 
-        for (int i = CurIndex + 1; i < count - 1; i++) {
+        for (int i = CurIndex + 1; i < COUNT - 1; i++) {
             CurZ = zStart + i * dz;
-            getFi(_E, count);
-            k1 = dz * dr(mas[CurIndex], calculateU(koef, CurZ), _E, Fi[CurIndex]);
-            k2 = dz * dr(mas[CurIndex] + k1 / 2, calculateU(koef, CurZ + dz / 2), _E, Fi[CurIndex]);
-            k3 = dz * dr(mas[CurIndex] + k2 / 2, calculateU(koef, CurZ + dz / 2), _E, Fi[CurIndex]);
-            k4 = dz * dr(mas[CurIndex] + k3, calculateU(koef, CurZ + dz), _E, Fi[CurIndex]);
+            getFi(e);
+            k1 = dz * dr(result[CurIndex], calculateU(coefficient, CurZ), e, fi[CurIndex]);
+            k2 = dz * dr(result[CurIndex] + k1 / 2, calculateU(coefficient, CurZ + dz / 2), e, fi[CurIndex]);
+            k3 = dz * dr(result[CurIndex] + k2 / 2, calculateU(coefficient, CurZ + dz / 2), e, fi[CurIndex]);
+            k4 = dz * dr(result[CurIndex] + k3, calculateU(coefficient, CurZ + dz), e, fi[CurIndex]);
 
-            mas[CurIndex + 1] = mas[CurIndex] + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
+            result[CurIndex + 1] = result[CurIndex] + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
             CurIndex++;
         }
 
-        dz = -(zFinal - zStart) / count;
-        CurIndex = count / 2 - 1;
-        mas[CurIndex] = 1;
+        dz = -(zFinal - zStart) / Controller.COUNT;
+        CurIndex = Controller.COUNT / 2 - 1;
+        result[CurIndex] = 1;
 
         for (int i = CurIndex - 1; i >= 0; i--) {
             CurZ = zStart - i * dz;
-            getFi(_E, count);
-            k1 = dr(mas[CurIndex], calculateU(koef, CurZ), _E, Fi[CurIndex]);
-            k2 = dr(mas[CurIndex] + k1 * dz / 2, calculateU(koef, CurZ + dz / 2), _E, Fi[CurIndex]);
-            k3 = dr(mas[CurIndex] + k2 * dz / 2, calculateU(koef, CurZ + dz / 2), _E, Fi[CurIndex]);
-            k4 = dr(mas[CurIndex] + k3 * dz, calculateU(koef, CurZ + dz), _E, Fi[CurIndex]);
+            getFi(e);
+            k1 = dr(result[CurIndex], calculateU(coefficient, CurZ), e, fi[CurIndex]);
+            k2 = dr(result[CurIndex] + k1 * dz / 2, calculateU(coefficient, CurZ + dz / 2), e, fi[CurIndex]);
+            k3 = dr(result[CurIndex] + k2 * dz / 2, calculateU(coefficient, CurZ + dz / 2), e, fi[CurIndex]);
+            k4 = dr(result[CurIndex] + k3 * dz, calculateU(coefficient, CurZ + dz), e, fi[CurIndex]);
 
             CurIndex--;
-            mas[CurIndex] = mas[CurIndex + 1] + (k1 + 2 * k2 + 2 * k3 + k4) * dz / 6;
+            result[CurIndex] = result[CurIndex + 1] + (k1 + 2 * k2 + 2 * k3 + k4) * dz / 6;
 
         }
-        return mas;
+        return result;
+    }
+
+    double dFi(double energy, double fi, double z) {
+        return (calculateU(coefficient, z) - energy) * Math.pow(Math.cos(fi), 2) - Math.pow(Math.sin(fi), 2);
     }
 
     double dr(double r, double U, double E, double fi) {
@@ -146,46 +143,36 @@ public class Controller {
 
     public void onDrawButton() {
 
-        koef = Double.parseDouble(kText.getText());
+        coefficient = Double.parseDouble(kText.getText());
         a = Double.parseDouble(pitWidthText.getText());
-        R = 15;
         U0 = Double.parseDouble(energyText.getText());
-        Sigma = Double.parseDouble(sigmaText.getText());
+        sigma = Double.parseDouble(sigmaText.getText());
 
-        int count = 300;
-        psi = new double[count];
-        Fi = new double[count];
-        r = new double[count];
-        lastFi = new double[count];
+        fi = new double[COUNT];
+        r = new double[COUNT];
+        lastFi = new double[COUNT];
 
-        Emin = 0;
-        Emax = koef * a;
+        double eMin = 0;
+        double eMax = coefficient * a;
 
         double currentFi = -Math.PI / 2;
-        double currentE = Emin;
-
-        lastFi[0] = getFi(currentE, count);
 
         List<Double> energyLevels = new ArrayList<>();
 
-        int k = 0;
-
-        for (int i = 1; i < count; i++) {
-            currentE = Emin + ((Emax - Emin) / count) * i;
-            lastFi[i] = getFi(currentE, count);
+        lastFi[0] = getFi(eMin);
+        for (int i = 1; i < COUNT; i++) {
+            double currentE = eMin + ((eMax - eMin) / COUNT) * i;
+            lastFi[i] = getFi(currentE);
             if (lastFi[i] < currentFi && lastFi[i - 1] > currentFi) {
-                k++;
-                double energy = getEstat(currentE - (Emax - Emin) / count, currentE, lastFi[i - 1], lastFi[i], currentFi, 0.1, count);
+                double energy = getEstat(currentE - (eMax - eMin) / COUNT, currentE, lastFi[i - 1], lastFi[i], currentFi);
                 energyLevels.add(energy);
-                currentFi = -(2 * k + 1) * Math.PI / 2;
+                currentFi = -(2 * energyLevels.size() + 1) * Math.PI / 2;
             }
         }
 
-        System.out.println(k);
-
         // Draw phase chart
         XYChart.Series<Number, Number> series1 = new XYChart.Series<>();
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < COUNT; i++) {
             series1.getData().add(new XYChart.Data<>(i, lastFi[i]));
         }
         phaseEnergyChart.getData().clear();
@@ -195,10 +182,10 @@ public class Controller {
         waveFunctionChart.getData().clear();
         for (Double energyLevel : energyLevels) {
             XYChart.Series<Number, Number> waveFunction = new XYChart.Series<>();
-            r = getR(energyLevel, count);
-            getFi(energyLevel, count);
-            for (int j = 0; j < count; j++) {
-                double value = r[j] * Math.cos(Fi[j]);
+            r = getR(energyLevel);
+            getFi(energyLevel);
+            for (int j = 0; j < COUNT; j++) {
+                double value = r[j] * Math.cos(fi[j]);
                 waveFunction.getData().add(new XYChart.Data<>(j, value));
             }
             waveFunctionChart.getData().add(waveFunction);
