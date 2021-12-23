@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.10'
+}
+
+group 'me.petrolingus.pel'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+}
+
+application {
+    mainClass.set('me.petrolingus.pel.Main')
+}
+
+javafx {
+    version = '17'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
