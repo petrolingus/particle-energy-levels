@@ -46,7 +46,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.petrolingus.pel.Controller">
+<VBox prefHeight="720.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.petrolingus.pel.Controller">
   <children>
     <MenuBar VBox.vgrow="NEVER">
       <menus>
@@ -117,6 +117,18 @@
                                  <children>
                                     <Label prefWidth="150.0" text="V" />
                                     <TextField fx:id="energyText" text="1" />
+                                 </children>
+                              </HBox>
+                              <HBox>
+                                 <children>
+                                    <Label prefWidth="150.0" text="Num Wave Func" />
+                                    <TextField fx:id="number" text="1" />
+                                 </children>
+                              </HBox>
+                              <HBox>
+                                 <children>
+                                    <Label prefWidth="150.0" text="Max Wave Func" />
+                                    <TextField fx:id="maxWave" editable="false" text="0" />
                                  </children>
                               </HBox>
                            </children>

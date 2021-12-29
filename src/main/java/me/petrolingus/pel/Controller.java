@@ -13,6 +13,8 @@ public class Controller {
     public TextField pitWidthText;
     public TextField kText;
     public TextField energyText;
+    public TextField number;
+    public TextField maxWave;
 
     private static final int COUNT = 300; // Count of samples
     private static final double R = 15; // Z-interval
@@ -178,17 +180,19 @@ public class Controller {
         phaseEnergyChart.getData().clear();
         phaseEnergyChart.getData().add(series1);
 
+        maxWave.setText(energyLevels.size() + "");
+
+        int numSel = Integer.parseInt(number.getText());
+
         // Draw wave function chart
         waveFunctionChart.getData().clear();
-        for (Double energyLevel : energyLevels) {
-            XYChart.Series<Number, Number> waveFunction = new XYChart.Series<>();
-            r = getR(energyLevel);
-            getFi(energyLevel);
-            for (int j = 0; j < COUNT; j++) {
-                double value = r[j] * Math.cos(fi[j]);
-                waveFunction.getData().add(new XYChart.Data<>(j, value));
-            }
-            waveFunctionChart.getData().add(waveFunction);
+        XYChart.Series<Number, Number> waveFunction = new XYChart.Series<>();
+        r = getR(energyLevels.get(numSel));
+        getFi(energyLevels.get(numSel));
+        for (int j = 0; j < COUNT; j++) {
+            double value = r[j] * Math.cos(fi[j]);
+            waveFunction.getData().add(new XYChart.Data<>(j, value));
         }
+        waveFunctionChart.getData().add(waveFunction);
     }
 }
